@@ -150,6 +150,172 @@ python src/ingest.py
 python src/chat.py
 ```
 
+## 🚀 Como Usar
+
+### Pré-requisitos
+
+- Python 3.9+
+- Docker e Docker Compose
+- API Key do OpenAI **OU** Google Gemini (escolha um provedor)
+
+### 1. Preparar o Ambiente
+
+```bash
+# Clone ou acesse o repositório
+cd seu-projeto
+
+# Crie um ambiente virtual
+python3 -m venv venv
+source venv/bin/activate  # No Windows: venv\Scripts\activate
+
+# Instale dependências
+pip install -r requirements.txt
+```
+
+### 2. Configurar Variáveis de Ambiente
+
+```bash
+# Copie o arquivo de exemplo
+cp .env.example .env
+
+# Edite o arquivo .env com suas configurações:
+# - Escolha um provedor: LLM_PROVIDER=openai (ou google)
+# - Adicione sua API Key do provedor escolhido
+```
+
+**Para OpenAI:**
+```bash
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-... # Sua chave OpenAI
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_LLM_MODEL=gpt-4o-mini
+```
+
+**Para Google Gemini:**
+```bash
+LLM_PROVIDER=google
+GOOGLE_API_KEY=... # Sua chave Google AI
+GOOGLE_EMBEDDING_MODEL=text-embedding-004
+GOOGLE_LLM_MODEL=gemini-2.0-flash
+```
+
+### 3. Iniciar o Banco de Dados
+
+```bash
+# Inicie os containers Docker
+docker compose up -d
+
+# Verifique se o PostgreSQL está pronto
+docker compose ps
+```
+
+### 4. Fazer Ingestão do PDF
+
+```bash
+# Execute o script de ingestão
+python src/ingest.py
+
+# Saída esperada:
+# Loading PDF from document.pdf...
+# Loaded X pages from PDF
+# Created Y chunks
+# ✅ Successfully ingested Y chunks into vector store!
+```
+
+**Nota:** A ingestão pode levar alguns minutos dependendo do tamanho do PDF e da velocidade da API.
+
+### 5. Iniciar o Chat
+
+```bash
+# Execute o script de chat
+python src/chat.py
+
+# Exemplo de uso:
+# Faça sua pergunta:
+# > Qual o faturamento da empresa?
+# Processando...
+# RESPOSTA: O faturamento foi de 10 milhões de reais.
+```
+
+## Troubleshooting
+
+### Erro: "Connection refused" ao conectar no banco
+```bash
+# Verifique se Docker está rodando
+docker compose ps
+
+# Se não estiver, reinicie
+docker compose down
+docker compose up -d
+```
+
+### Erro: "OPENAI_API_KEY not set"
+```bash
+# Certifique-se que .env existe e contém a chave
+cat .env | grep OPENAI_API_KEY
+
+# A chave deve começar com "sk-"
+```
+
+### Erro: "Connection refused" ao conectar no banco
+```bash
+# Aguarde o banco ficar pronto (pode levar alguns segundos)
+sleep 5 && python src/ingest.py
+```
+
+### Erro: "Vector dimension mismatch"
+```bash
+# Se trocou de modelo de embedding, precisa limpar o banco:
+docker compose down -v  # Remove volumes de dados
+docker compose up -d
+python src/ingest.py   # Refaça a ingestão
+```
+
+## 📋 Estrutura do Projeto
+
+```
+.
+├── docker-compose.yml          # Configuração do PostgreSQL + pgVector
+├── requirements.txt            # Dependências Python
+├── .env.example                # Template de variáveis de ambiente
+├── src/
+│   ├── ingest.py              # Script de ingestão do PDF
+│   ├── search.py              # Lógica de busca semântica
+│   └── chat.py                # Interface CLI interativa
+├── document.pdf               # PDF de exemplo para ingestão
+└── README.md                  # Este arquivo
+```
+
+## 🔧 Configurações Avançadas
+
+### Personalizar Chunk Size
+```bash
+# No arquivo .env
+CHUNK_SIZE=2000          # Aumenta tamanho dos chunks
+CHUNK_OVERLAP=200        # Aumenta overlap
+```
+
+### Aumentar Resultados de Busca
+```bash
+# No arquivo .env
+SEARCH_K=15              # Busca os 15 resultados mais relevantes (padrão: 10)
+```
+
+### Usar outro PDF
+```bash
+# No arquivo .env
+PDF_PATH=/caminho/para/outro/documento.pdf
+```
+
+## 📝 Notas Importantes
+
+⚠️ **Mudança de Modelo de Embedding:** Se trocar o modelo de embeddings após a primeira ingestão, você precisa:
+1. Apagar os dados do PostgreSQL: `docker compose down -v`
+2. Reiniciar o banco: `docker compose up -d`
+3. Refazer a ingestão: `python src/ingest.py`
+
+Isso ocorre porque modelos diferentes geram vetores com dimensões diferentes (ex: OpenAI gera 1536 dims, Gemini gera 768 dims).
+
 ## Entregável
 
 Repositório público no GitHub contendo todo o código-fonte e README com instruções claras de execução do projeto.
